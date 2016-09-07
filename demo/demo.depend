@@ -1,0 +1,8 @@
+# depslib dependency file v1.0
+1473196179 source:/home/charlie/Development/opengl/Assingment/demo/main.cpp
+	<iostream>
+	<stdlib.h>
+	<math.h>
+	<GL/glut.h>
+	<vector>
+

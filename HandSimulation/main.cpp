@@ -17,8 +17,15 @@ double cameraAngle;
 int drawgrid;
 int drawaxes;
 double angle;
-double forwardMove=5;
 
+
+
+//////torus param
+
+double innerRadius;
+double outerRadius;
+double yAxisTranslate;
+//double leftRightRotate=pi/36.0;
 
 
 
@@ -43,6 +50,11 @@ class point
 };
 
 
+/////camera
+
+point globalZaxis;
+
+
 
 ////// wheel ////////////////
 
@@ -52,7 +64,7 @@ point wheelRightVector;
 double theta=0.0;
 point wheelPoints[2][100];
 double wheelRadius=30;
-point globalZaxis;
+
 int wheelSegments=20;
 bool wheelMove=false;
 bool wheelPreviousColor=true;  //// here true means red  false means green
@@ -73,14 +85,13 @@ class Utils{
         static point getPerpendicularVector(point look,point right,bool positive=true){
 
             if(positive){
-                point p=crossProduct(look,right);
+                point p=crossProduct(right,look);
                 p.convertToUnit();
                 return p;
             }
             else{
-                point p=crossProduct(right,look);
+                point p=crossProduct(look,right);
                 p.convertToUnit();
-                p.print();
                 return p;
             }
 
@@ -88,12 +99,17 @@ class Utils{
         }
         static point getRightLeftVector(point look,point up,bool right=true){
             if(!right){
-                up.z*=-1;
+                point p=crossProduct(up,look);
+                p.convertToUnit();
+                return p;
+            }
+            else{
+                point p=crossProduct(look,up);
+                p.convertToUnit();
+                return p;
             }
 
-            point p=crossProduct(look,up);
-            p.convertToUnit();
-            return p;
+
         }
         static point crossProduct(point u,point v){
             point p;
@@ -131,8 +147,8 @@ class CameraOperation{
         point rightVector;
     public:
         CameraOperation(){
-            cameraPosition.x=-200.0;
-            cameraPosition.y=-200.0;
+            cameraPosition.x=200.0;
+            cameraPosition.y=200.0;
             cameraPosition.z=200.0;
 
             lookVector.x=(0.0-cameraPosition.x);
@@ -236,25 +252,23 @@ void drawAxes()
 void drawGrid()
 {
 	int i;
-	if(drawgrid==1)
-	{
-		glColor3f(0.6, 0.6, 0.6);	//grey
-		glBegin(GL_LINES);{
-			for(i=-8;i<=8;i++){
+    glColor3f(0.6, 0.6, 0.6);	//grey
+    glBegin(GL_LINES);{
+        for(i=-8;i<=8;i++){
 
-				if(i==0)
-					continue;	//SKIP the MAIN axes
+            if(i==0)
+                continue;	//SKIP the MAIN axes
 
-				//lines parallel to Y-axis
-				glVertex3f(i*10, -90, 0);
-				glVertex3f(i*10,  90, 0);
+            //lines parallel to Y-axis
+            glVertex3f(i*10, -90, 0);
+            glVertex3f(i*10,  90, 0);
 
-				//lines parallel to X-axis
-				glVertex3f(-90, i*10, 0);
-				glVertex3f( 90, i*10, 0);
-			}
-		}glEnd();
-	}
+            //lines parallel to X-axis
+            glVertex3f(-90, i*10, 0);
+            glVertex3f( 90, i*10, 0);
+        }
+    }
+    glEnd();
 }
 
 
@@ -270,6 +284,16 @@ void drawWheel(){
         wheelPoints[1][i].x=wheelPoints[0][i].x+rightVector.x*10;
         wheelPoints[1][i].y=wheelPoints[0][i].y+rightVector.y*10;
         wheelPoints[1][i].z=wheelPoints[0][i].z;
+    }
+
+    for(int i=0;i<wheelSegments;i++)
+    {
+        glBegin(GL_LINES);
+        {
+			glVertex3f(wheelPoints[0][i].x,wheelPoints[0][i].y,wheelPoints[0][i].z);
+			glVertex3f(wheelPoints[0][i+1].x,wheelPoints[0][i+1].y,wheelPoints[0][i+1].z);
+        }
+        glEnd();
     }
 
     glColor3f(1,1,0);
@@ -315,113 +339,301 @@ void drawWheel(){
         }
         glEnd();
     }
+}
 
+void drawHand(void)
+{
+    glColor3f(1,1,1);
+    glTranslated(0,0,-40);
+    glScaled(1,1,4);
+    glutWireSphere(10,14,10);
+    glTranslated(0,0,-20);
+    glutWireSphere(5,14,10);
 
 
 }
 
 
+void drawUnitVector(){
+    point p;
+    point look=camera.getLookVector();
+    point right=camera.getRightVector();
+    point up=camera.getUpVector();
+
+    p.x=100;
+    p.y=100;
+    p.z=120;
+
+    glBegin(GL_LINES);
+        {
+            glColor3f(1,0,0);
+			glVertex3f(p.x,p.y,p.z);
+			glVertex3f(p.x+look.x*50,p.y+look.y*50,p.z+look.z*50);
+        }
+    glEnd();
+
+    glBegin(GL_LINES);
+        {
+            glColor3f(0,1,0);
+			glVertex3f(p.x,p.y,p.z);
+			glVertex3f(p.x+right.x*50,p.y+right.y*50,p.z+right.z*50);
+        }
+    glEnd();
+
+    glBegin(GL_LINES);
+        {
+            glColor3f(0,0,1);
+			glVertex3f(p.x,p.y,p.z);
+			glVertex3f(p.x+up.x*50,p.y+up.y*50,p.z+up.z*50);
+        }
+    glEnd();
+
+}
+
 void keyboardListener(unsigned char key, int x,int y){
-        if((char)key=='w'){
-            //pace_y=pace_y+.5;
-            for(int i=0;i<=wheelSegments;i++)
-            {
-                wheelPoints[0][i].x+=wheelForwardVector.x*forwardMove;
-                wheelPoints[0][i].y+=wheelForwardVector.y*forwardMove;
-                //wheelPoints[0][i].z=wheelRadius*sin(((double)i/(double)wheelSegments)*2*pi)+wheelRadius;
-            }
-            wheelCenter.x+=wheelForwardVector.x*forwardMove;
-            wheelCenter.y+=wheelForwardVector.y*forwardMove;
+
+    if((char)key=='1'){
+        double upDownRotate=pi/18;
+        point lookVector=camera.getLookVector();
+        point rightVector=camera.getRightVector();
+
+
+        double cosA=cos(upDownRotate);
+        double sinA=sin(upDownRotate);
+
+        lookVector.x*=cosA;
+        lookVector.y*=cosA;
+
+        rightVector.x*=sinA;
+        rightVector.y*=sinA;
+
+        lookVector.x+=rightVector.x;
+        lookVector.y+=rightVector.y;
+
+        camera.setRightVector(Utils::getRightLeftVector(lookVector,camera.getUpVector()));
+        camera.setLookVector(lookVector);
+
+    }
+    else if((char)key=='2'){
+        double upDownRotate=pi/18;
+        point lookVector=camera.getLookVector();
+        point leftVector=Utils::getRightLeftVector(lookVector,globalZaxis,false);
+
+
+        double cosA=cos(upDownRotate);
+        double sinA=sin(upDownRotate);
+
+        lookVector.x*=cosA;
+        lookVector.y*=cosA;
+
+        leftVector.x*=sinA;
+        leftVector.y*=sinA;
+
+        lookVector.x+=leftVector.x;
+        lookVector.y+=leftVector.y;
+
+        camera.setRightVector(Utils::getRightLeftVector(lookVector,camera.getUpVector()));
+        camera.setLookVector(lookVector);
+
+    }
+    else if((char)key=='3'){
+        double upDownRotate=pi/18;
+        point lookVector=camera.getLookVector();
+        point upVector=camera.getUpVector();
+
+
+        double cosA=cos(upDownRotate);
+        double sinA=sin(upDownRotate);
+
+        lookVector.z*=cosA;
+
+        upVector.z*=sinA;
+
+        lookVector.z+=upVector.z;
+
+        camera.setUpVector(Utils::getPerpendicularVector(lookVector,camera.getRightVector()));
+        camera.setLookVector(lookVector);
+
+    }
+    else if((char)key=='4'){
+        double upDownRotate=pi/18;
+        point lookVector=camera.getLookVector();
+        point downVector=Utils::getPerpendicularVector(lookVector,camera.getRightVector(),false);
+
+
+        double cosA=cos(upDownRotate);
+        double sinA=sin(upDownRotate);
+
+        lookVector.z*=cosA;
+
+        downVector.z*=sinA;
+
+        lookVector.z+=downVector.z;
+
+        camera.setUpVector(Utils::getPerpendicularVector(lookVector,camera.getRightVector()));
+        camera.setLookVector(lookVector);
+
+    }
+
+    else if((char)key=='5'){
+        double tiltRotate=pi/18;
+        point rightVector=camera.getRightVector();
+        point upVector=camera.getUpVector();
+
+
+        double cosA=cos(tiltRotate);
+        double sinA=sin(tiltRotate);
+
+        upVector.x*=cosA;
+        upVector.z*=cosA;
+
+        rightVector.x*=sinA;
+        rightVector.z*=sinA;
+
+        upVector.x+=rightVector.x;
+        upVector.z+=rightVector.z;
+
+        camera.setRightVector(Utils::getRightLeftVector(camera.getLookVector(),upVector));
+        camera.setUpVector(upVector);
+
+    }
+
+    else if((char)key=='6'){
+        double tiltRotate=pi/18;
+        point upVector=camera.getUpVector();
+        point leftVector=Utils::getRightLeftVector(camera.getLookVector(),upVector,false);
+
+
+        double cosA=cos(tiltRotate);
+        double sinA=sin(tiltRotate);
+
+        upVector.x*=cosA;
+        upVector.z*=cosA;
+
+        leftVector.x*=sinA;
+        leftVector.z*=sinA;
+
+        upVector.x+=leftVector.x;
+        upVector.z+=leftVector.z;
+
+        camera.setRightVector(Utils::getRightLeftVector(camera.getLookVector(),upVector));
+        camera.setUpVector(upVector);
+
+    }
+    else if((char)key=='w'){
+        //pace_y=pace_y+.5;
+        for(int i=0;i<=wheelSegments;i++)
+        {
+            wheelPoints[0][i].x+=wheelForwardVector.x*5;
+            wheelPoints[0][i].y+=wheelForwardVector.y*5;
+            //wheelPoints[0][i].z=wheelRadius*sin(((double)i/(double)wheelSegments)*2*pi)+wheelRadius;
         }
-        else if((char)key=='s'){
-            for(int i=0;i<=wheelSegments;i++)
-            {
-                wheelPoints[0][i].x-=wheelForwardVector.x*forwardMove;
-                wheelPoints[0][i].y-=wheelForwardVector.y*forwardMove;
-                //wheelPoints[0][i].z=wheelRadius*sin(((double)i/(double)wheelSegments)*2*pi)+wheelRadius;
-            }
-            wheelCenter.x-=wheelForwardVector.x*forwardMove;
-            wheelCenter.y-=wheelForwardVector.y*forwardMove;
-            //pace_y=pace_y-.5;
+        wheelCenter.x+=wheelForwardVector.x*5;
+        wheelCenter.y+=wheelForwardVector.y*5;
+    }
+    else if((char)key=='s'){
+        for(int i=0;i<=wheelSegments;i++)
+        {
+            wheelPoints[0][i].x-=wheelForwardVector.x*5;
+            wheelPoints[0][i].y-=wheelForwardVector.y*5;
+            //wheelPoints[0][i].z=wheelRadius*sin(((double)i/(double)wheelSegments)*2*pi)+wheelRadius;
         }
-        else if((char)key=='d'){
+        wheelCenter.x-=wheelForwardVector.x*5;
+        wheelCenter.y-=wheelForwardVector.y*5;
+        //pace_y=pace_y-.5;
+    }
+    else if((char)key=='d'){
 
-            theta=pi/18;
-            for(int i=0;i<=wheelSegments;i++)
-            {
-                wheelPoints[0][i]=Utils::rotatePoint(wheelCenter,(-1)*theta,wheelPoints[0][i]);
-                //wheelPoints[0][i].z=wheelRadius*sin(((double)i/(double)wheelSegments)*2*pi)+wheelRadius;
-            }
-
-
-            double cosA=cos(theta);
-            double sinA=sin(theta);
-
-            wheelForwardVector.x*=cosA;
-            wheelForwardVector.y*=cosA;
-            //lookVector.z*=cosA;
-
-            wheelRightVector.x*=sinA;
-            wheelRightVector.y*=sinA;
-
-            wheelForwardVector.x+=wheelRightVector.x;
-            wheelForwardVector.y+=wheelRightVector.y;
-            wheelForwardVector.convertToUnit();
-
-            wheelRightVector=Utils::crossProduct(wheelForwardVector,globalZaxis);
-            wheelRightVector.convertToUnit();
-
-            wheelRightVector.print();
-            wheelForwardVector.print();
-            //wheelRightVector.convertToUnit();
-
-
-            cout<<"theta "<<theta<<endl;
-
-
-           //wh_angle=wh_angle+0.25;
-
-           // co_x=co_x-.5;
-           // pace_y=pace_y-.5;
+        theta=pi/18;
+        for(int i=0;i<=wheelSegments;i++)
+        {
+            wheelPoints[0][i]=Utils::rotatePoint(wheelCenter,(-1)*theta,wheelPoints[0][i]);
+            //wheelPoints[0][i].z=wheelRadius*sin(((double)i/(double)wheelSegments)*2*pi)+wheelRadius;
         }
-        else if((char)key=='a'){
-           theta=pi/18;
-            for(int i=0;i<=wheelSegments;i++)
-            {
-                wheelPoints[0][i]=Utils::rotatePoint(wheelCenter,theta,wheelPoints[0][i]);
-            }
 
 
-            double cosA=cos((-1)*theta);
-            double sinA=sin((-1)*theta);
+        double cosA=cos(theta);
+        double sinA=sin(theta);
 
-            wheelForwardVector.x*=cosA;
-            wheelForwardVector.y*=cosA;
-            //lookVector.z*=cosA;
+        wheelForwardVector.x*=cosA;
+        wheelForwardVector.y*=cosA;
+        //lookVector.z*=cosA;
 
-            wheelRightVector.x*=sinA;
-            wheelRightVector.y*=sinA;
+        wheelRightVector.x*=sinA;
+        wheelRightVector.y*=sinA;
 
-            wheelForwardVector.x+=wheelRightVector.x;
-            wheelForwardVector.y+=wheelRightVector.y;
-            wheelForwardVector.convertToUnit();
+        wheelForwardVector.x+=wheelRightVector.x;
+        wheelForwardVector.y+=wheelRightVector.y;
+        wheelForwardVector.convertToUnit();
 
-            wheelRightVector=Utils::crossProduct(wheelForwardVector,globalZaxis);
-            wheelRightVector.convertToUnit();
+        wheelRightVector=Utils::crossProduct(wheelForwardVector,globalZaxis);
+        wheelRightVector.convertToUnit();
 
-            wheelRightVector.print();
-            wheelForwardVector.print();
-            //wheelRightVector.convertToUnit();
-
-
+        wheelRightVector.print();
+        wheelForwardVector.print();
+    }
+    else if((char)key=='a'){
+        theta=pi/18;
+        for(int i=0;i<=wheelSegments;i++)
+        {
+            wheelPoints[0][i]=Utils::rotatePoint(wheelCenter,theta,wheelPoints[0][i]);
         }
+
+
+        double cosA=cos((-1)*theta);
+        double sinA=sin((-1)*theta);
+
+        wheelForwardVector.x*=cosA;
+        wheelForwardVector.y*=cosA;
+        //lookVector.z*=cosA;
+
+        wheelRightVector.x*=sinA;
+        wheelRightVector.y*=sinA;
+
+        wheelForwardVector.x+=wheelRightVector.x;
+        wheelForwardVector.y+=wheelRightVector.y;
+        wheelForwardVector.convertToUnit();
+
+        wheelRightVector=Utils::crossProduct(wheelForwardVector,globalZaxis);
+        wheelRightVector.convertToUnit();
+
+        wheelRightVector.print();
+        wheelForwardVector.print();
+
+    }
 
 }
 
 
 void specialKeyListener(int key, int x,int y){
 
+    if(key==GLUT_KEY_DOWN){
+        camera.updateCameraPosition(camera.getLookVector(),-5);
+    }
+    else if(key==GLUT_KEY_UP){
 
+        camera.updateCameraPosition(camera.getLookVector(),5);
+
+    }
+    else if(key==GLUT_KEY_RIGHT){
+
+        camera.updateCameraPosition(camera.getRightVector(),5);
+
+    }
+    else if(key==GLUT_KEY_LEFT){
+
+        camera.updateCameraPosition(camera.getRightVector(),-5);
+
+    }
+    else if(key==GLUT_KEY_PAGE_UP){
+
+        camera.updateCameraPosition(camera.getUpVector(),5);
+
+    }
+    else if(key==GLUT_KEY_PAGE_DOWN){
+
+        camera.updateCameraPosition(camera.getUpVector(),-5);
+    }
 }
 
 
@@ -493,9 +705,10 @@ void display(){
 	//add objects
 
 	drawAxes();
-	drawGrid();
-
-    drawWheel();
+	//drawGrid();
+    drawUnitVector();
+    //drawWheel();
+    drawHand();
 	glutSwapBuffers();
 }
 
@@ -526,6 +739,9 @@ void init(){
 	cameraHeight=150.0;
 	cameraAngle=1.0;
 	angle=0;
+	innerRadius=70;
+	outerRadius=200;
+	yAxisTranslate=innerRadius+((outerRadius-innerRadius)/2);
 
 
 	/////// cube to sphere

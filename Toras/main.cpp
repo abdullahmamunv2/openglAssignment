@@ -17,8 +17,15 @@ double cameraAngle;
 int drawgrid;
 int drawaxes;
 double angle;
-double forwardMove=5;
 
+
+
+//////torus param
+
+double innerRadius;
+double outerRadius;
+double yAxisTranslate;
+//double leftRightRotate=pi/36.0;
 
 
 
@@ -41,30 +48,6 @@ class point
             z/=vectorValue;
         }
 };
-
-
-
-////// wheel ////////////////
-
-point wheelCenter;
-point wheelForwardVector;
-point wheelRightVector;
-double theta=0.0;
-point wheelPoints[2][100];
-double wheelRadius=30;
-point globalZaxis;
-int wheelSegments=20;
-bool wheelMove=false;
-bool wheelPreviousColor=true;  //// here true means red  false means green
-
-
-///// cube to sphere
-
-double cubeLength;
-point cubePoint;
-double cubeTranslate;
-double d=0;
-
 
 
 class Utils{
@@ -212,6 +195,9 @@ CameraOperation camera;
 
 
 
+
+
+
 void drawAxes()
 {
 	if(drawaxes==1)
@@ -258,63 +244,59 @@ void drawGrid()
 }
 
 
+void drawToras(double radius,int segments){
 
-
-void drawWheel(){
-
-    point rightVector=Utils::crossProduct(wheelForwardVector,globalZaxis);
-    rightVector.convertToUnit();
-    glColor3f(1,0,0);
-    for(int i=0;i<=wheelSegments;i++)
+    point points [30][100];
+    glColor3f(0.7,0.7,0.7);
+    int circleNum=30;
+    double r=(outerRadius-innerRadius)/2;
+    //generate points
+    for(int i=0;i<=segments;i++)
     {
-        wheelPoints[1][i].x=wheelPoints[0][i].x+rightVector.x*10;
-        wheelPoints[1][i].y=wheelPoints[0][i].y+rightVector.y*10;
-        wheelPoints[1][i].z=wheelPoints[0][i].z;
+        points[0][i].x=0;
+        points[0][i].y=r*cos(((double)i/(double)segments)*2*pi)+innerRadius+r;
+        points[0][i].z=((outerRadius-innerRadius)/2)*sin(((double)i/(double)segments)*2*pi);
     }
 
-    glColor3f(1,1,0);
-    glBegin(GL_LINES);
+    //point point2[100];
+    for(int i=1;i<circleNum;i++){
+        for(int j=0;j<=segments;j++)
         {
-			glVertex3f(wheelCenter.x,wheelCenter.y,wheelCenter.z+wheelRadius);
-			glVertex3f(wheelCenter.x+wheelForwardVector.x*100,wheelCenter.y+wheelForwardVector.y*100,wheelCenter.z+wheelRadius);
-        }
-    glEnd();
 
-    glColor3f(1,1,1);
-    glBegin(GL_LINES);
+            double newX = (points[0][j].x)*cos(((double)i/(double)segments)*2*pi) - (points[0][j].y)*sin(((double)i/(double)segments)*2*pi);
+
+            double newY = (points[0][j].x)*sin(((double)i/(double)segments)*2*pi) + (points[0][j].y)*cos(((double)i/(double)segments)*2*pi);
+
+            points[i][j].x=newX;
+            points[i][j].y=newY;
+        }
+
+    }
+
+
+    for(int i=0;i<circleNum-1;i++){
+        for(int j=0;j<segments;j++)
         {
-			glVertex3f(wheelCenter.x,wheelCenter.y,wheelCenter.z+wheelRadius);
-			glVertex3f(wheelCenter.x+wheelRightVector.x*100,wheelCenter.y+wheelRightVector.y*100,wheelCenter.z+wheelRadius);
-        }
-    glEnd();
-
-
-
-    for(int j=0;j<wheelSegments;j++)
-    {
-        if(wheelMove){
-            if(wheelPreviousColor)
-                glColor3f(0,1,0);
-            else
+            if(j%2==0)
                 glColor3f(1,0,0);
+            else
+                glColor3f(0,1,0);
+
+            glBegin(GL_QUADS);
+            {
+                glVertex3f(points[i][j].x,points[i][j].y,points[0][j].z);
+                glVertex3f(points[i+1][j].x,points[i+1][j].y,points[0][j].z);
+                glVertex3f(points[i+1][j+1].x,points[i+1][j+1].y,points[0][j+1].z);
+                glVertex3f(points[i][j+1].x,points[i][j+1].y,points[0][j+1].z);
+
+
+            }
+            glEnd();
         }
-        else
-        if(j%2==0)
-            glColor3f(1,0,0);
-        else
-            glColor3f(0,1,0);
-
-        glBegin(GL_QUADS);
-        {
-            glVertex3f(wheelPoints[0][j].x,wheelPoints[0][j].y,wheelPoints[0][j].z);
-            glVertex3f(wheelPoints[1][j].x,wheelPoints[1][j].y,wheelPoints[0][j].z);
-            glVertex3f(wheelPoints[1][j+1].x,wheelPoints[1][j+1].y,wheelPoints[0][j+1].z);
-            glVertex3f(wheelPoints[0][j+1].x,wheelPoints[0][j+1].y,wheelPoints[0][j+1].z);
-
-
-        }
-        glEnd();
     }
+
+
+
 
 
 
@@ -322,104 +304,26 @@ void drawWheel(){
 
 
 void keyboardListener(unsigned char key, int x,int y){
-        if((char)key=='w'){
-            //pace_y=pace_y+.5;
-            for(int i=0;i<=wheelSegments;i++)
-            {
-                wheelPoints[0][i].x+=wheelForwardVector.x*forwardMove;
-                wheelPoints[0][i].y+=wheelForwardVector.y*forwardMove;
-                //wheelPoints[0][i].z=wheelRadius*sin(((double)i/(double)wheelSegments)*2*pi)+wheelRadius;
-            }
-            wheelCenter.x+=wheelForwardVector.x*forwardMove;
-            wheelCenter.y+=wheelForwardVector.y*forwardMove;
-        }
-        else if((char)key=='s'){
-            for(int i=0;i<=wheelSegments;i++)
-            {
-                wheelPoints[0][i].x-=wheelForwardVector.x*forwardMove;
-                wheelPoints[0][i].y-=wheelForwardVector.y*forwardMove;
-                //wheelPoints[0][i].z=wheelRadius*sin(((double)i/(double)wheelSegments)*2*pi)+wheelRadius;
-            }
-            wheelCenter.x-=wheelForwardVector.x*forwardMove;
-            wheelCenter.y-=wheelForwardVector.y*forwardMove;
-            //pace_y=pace_y-.5;
-        }
-        else if((char)key=='d'){
-
-            theta=pi/18;
-            for(int i=0;i<=wheelSegments;i++)
-            {
-                wheelPoints[0][i]=Utils::rotatePoint(wheelCenter,(-1)*theta,wheelPoints[0][i]);
-                //wheelPoints[0][i].z=wheelRadius*sin(((double)i/(double)wheelSegments)*2*pi)+wheelRadius;
-            }
-
-
-            double cosA=cos(theta);
-            double sinA=sin(theta);
-
-            wheelForwardVector.x*=cosA;
-            wheelForwardVector.y*=cosA;
-            //lookVector.z*=cosA;
-
-            wheelRightVector.x*=sinA;
-            wheelRightVector.y*=sinA;
-
-            wheelForwardVector.x+=wheelRightVector.x;
-            wheelForwardVector.y+=wheelRightVector.y;
-            wheelForwardVector.convertToUnit();
-
-            wheelRightVector=Utils::crossProduct(wheelForwardVector,globalZaxis);
-            wheelRightVector.convertToUnit();
-
-            wheelRightVector.print();
-            wheelForwardVector.print();
-            //wheelRightVector.convertToUnit();
-
-
-            cout<<"theta "<<theta<<endl;
-
-
-           //wh_angle=wh_angle+0.25;
-
-           // co_x=co_x-.5;
-           // pace_y=pace_y-.5;
-        }
-        else if((char)key=='a'){
-           theta=pi/18;
-            for(int i=0;i<=wheelSegments;i++)
-            {
-                wheelPoints[0][i]=Utils::rotatePoint(wheelCenter,theta,wheelPoints[0][i]);
-            }
-
-
-            double cosA=cos((-1)*theta);
-            double sinA=sin((-1)*theta);
-
-            wheelForwardVector.x*=cosA;
-            wheelForwardVector.y*=cosA;
-            //lookVector.z*=cosA;
-
-            wheelRightVector.x*=sinA;
-            wheelRightVector.y*=sinA;
-
-            wheelForwardVector.x+=wheelRightVector.x;
-            wheelForwardVector.y+=wheelRightVector.y;
-            wheelForwardVector.convertToUnit();
-
-            wheelRightVector=Utils::crossProduct(wheelForwardVector,globalZaxis);
-            wheelRightVector.convertToUnit();
-
-            wheelRightVector.print();
-            wheelForwardVector.print();
-            //wheelRightVector.convertToUnit();
-
-
-        }
-
+    if((char)key=='3'){
+        outerRadius+=5;
+    }
+    else if((char)key=='4'){
+        if(outerRadius-5> innerRadius)
+            outerRadius-=5;
+    }
+    else if((char)key=='1'){
+        if(innerRadius<outerRadius-5)
+            innerRadius+=5;
+    }
+    else if((char)key=='2'){
+        if(innerRadius >0)
+            innerRadius-=5;
+    }
 }
 
 
 void specialKeyListener(int key, int x,int y){
+
 
 
 }
@@ -493,9 +397,12 @@ void display(){
 	//add objects
 
 	drawAxes();
-	drawGrid();
+    drawToras(30,24);
 
-    drawWheel();
+
+
+
+	//ADD this line in the end --- if you use double buffer (i.e. GL_DOUBLE)
 	glutSwapBuffers();
 }
 
@@ -508,34 +415,20 @@ void animate(){
 
 void init(){
 	//codes for initialization
-	//camera=new CameraOperation();
-	///// wheel init
-	for(int i=0;i<=wheelSegments;i++)
-    {
-        wheelPoints[0][i].x=wheelCenter.x;
-        wheelPoints[0][i].y=wheelRadius*cos(((double)i/(double)wheelSegments)*2*pi)+wheelCenter.y;
-        wheelPoints[0][i].z=wheelRadius*sin(((double)i/(double)wheelSegments)*2*pi)+wheelRadius;
-    }
-    wheelForwardVector.y=1;
-    wheelRightVector.x=1;
-    globalZaxis.z=1.0;
-	/////
+
 
 	drawgrid=0;
 	drawaxes=1;
 	cameraHeight=150.0;
 	cameraAngle=1.0;
+
+
 	angle=0;
+	innerRadius=70;
+	outerRadius=200;
+	yAxisTranslate=innerRadius+((outerRadius-innerRadius)/2);
 
 
-	/////// cube to sphere
-    cubePoint.x=30;
-    cubePoint.y=30;
-    cubePoint.z=30;
-    cubeLength=60;
-    cubeTranslate=58;
-
-	/////////////
 
 
 	//clear the screen
@@ -565,7 +458,7 @@ int main(int argc, char **argv){
 	glutInitWindowPosition(0, 0);
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGB);	//Depth, Double buffer, RGB color
 
-	glutCreateWindow("My OpenGL Program");
+	glutCreateWindow("Toras");
 
 	init();
 

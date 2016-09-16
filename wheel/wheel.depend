@@ -225,3 +225,10 @@
 	<stddef.h>
 	<GL/gl.h>
 
+1474055436 source:/home/charlie/Development/opengl/openglAssignment/wheel/main.cpp
+	<iostream>
+	<stdlib.h>
+	<math.h>
+	<GL/glut.h>
+	<vector>
+

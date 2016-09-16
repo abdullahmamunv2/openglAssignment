@@ -234,3 +234,9 @@
 	<stddef.h>
 	<GL/gl.h>
 
+1474036733 source:/home/charlie/Development/opengl/openglAssignment/alimWheel/main.cpp
+	<stdio.h>
+	<stdlib.h>
+	<math.h>
+	<GL/glut.h>
+

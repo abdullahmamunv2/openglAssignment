@@ -2,7 +2,6 @@
 #include<stdlib.h>
 #include<math.h>
 
-#include <windows.h>
 #include <GL/glut.h>
 
 #include<vector>
@@ -25,13 +24,18 @@ class point
     public:
         double x,y,z;
         void print(){
-            cout<<"X : "<<x<<endl<<"Y: "<<y<<endl<<"Z: "<<z<<endl;
+            //cout<<"X : "<<x<<endl<<"Y: "<<y<<endl<<"Z: "<<z<<endl;
         }
         void convertToUnit(){
             double vectorValue=floor((sqrt(x*x+y*y+z*z)*100))/100;
             x/=vectorValue;
             y/=vectorValue;
             z/=vectorValue;
+        }
+        void scale(double value){
+            x*=value;
+            y*=value;
+            z*=value;
         }
 };
 
@@ -282,7 +286,6 @@ void drawOneEighthOfSphare(double radius,int slices,int stacks){
 	{
 		h=radius*sin(((double)i/(double)stacks)*(pi/2));
 		r=radius*cos(((double)i/(double)stacks)*(pi/2));
-        cout<<h<<" "<<r<<endl;
 		for(j=0;j<=slices;j++)
 		{
 			points[i][j].x=r*cos(((double)j/(double)slices)*pi/2);
@@ -923,10 +926,12 @@ void display(){
 	point position=camera.getCameraPosition();
 	point lookVector=camera.getLookVector();
 	point upVector=camera.getUpVector();
+	//lookVector.scale(200.0);
 
-	//cout<<cameraConfig[0]->x<<endl;
+	//cout<<"look "<<lookVector.x<<endl;
 
 	gluLookAt(position.x,position.y,position.z,position.x+lookVector.x,position.y+lookVector.y,position.z+lookVector.z,upVector.x,upVector.y,upVector.z);
+	//gluLookAt(position.x,position.y,position.z,position.x,position.y,position.z,upVector.x,upVector.y,upVector.z);
 
 
 	//again select MODEL-VIEW

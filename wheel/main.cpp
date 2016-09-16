@@ -2,7 +2,7 @@
 #include<stdlib.h>
 #include<math.h>
 
-#include <windows.h>
+
 #include <GL/glut.h>
 
 #include<vector>
@@ -17,7 +17,7 @@ double cameraAngle;
 int drawgrid;
 int drawaxes;
 double angle;
-double forwardMove=5;
+double forwardMove=2;
 
 
 
@@ -56,6 +56,8 @@ point globalZaxis;
 int wheelSegments=20;
 bool wheelMove=false;
 bool wheelPreviousColor=true;  //// here true means red  false means green
+double rotate_degree=0;
+
 
 
 ///// cube to sphere
@@ -236,31 +238,61 @@ void drawAxes()
 void drawGrid()
 {
 	int i;
-	if(drawgrid==1)
-	{
-		glColor3f(0.6, 0.6, 0.6);	//grey
-		glBegin(GL_LINES);{
-			for(i=-8;i<=8;i++){
+    glColor3f(0.6, 0.6, 0.6);	//grey
+    glBegin(GL_LINES);{
+        for(i=-8;i<=8;i++){
 
-				if(i==0)
-					continue;	//SKIP the MAIN axes
+            if(i==0)
+                continue;	//SKIP the MAIN axes
 
-				//lines parallel to Y-axis
-				glVertex3f(i*10, -90, 0);
-				glVertex3f(i*10,  90, 0);
+            //lines parallel to Y-axis
+            glVertex3f(i*10, -90, 0);
+            glVertex3f(i*10,  90, 0);
 
-				//lines parallel to X-axis
-				glVertex3f(-90, i*10, 0);
-				glVertex3f( 90, i*10, 0);
-			}
-		}glEnd();
-	}
+            //lines parallel to X-axis
+            glVertex3f(-90, i*10, 0);
+            glVertex3f( 90, i*10, 0);
+        }
+    }glEnd();
+
 }
 
 
+void drawWheelAxis(){
+
+    glColor3f(0.0,0.8,0.5);
+    glBegin(GL_QUADS);
+    {
+
+        glVertex3f(wheelPoints[0][0].x,wheelPoints[0][0].y,wheelPoints[0][0].z);
+        glVertex3f(wheelPoints[1][0].x,wheelPoints[1][0].y,wheelPoints[0][0].z);
+        glVertex3f(wheelPoints[1][wheelSegments/2].x,wheelPoints[1][wheelSegments/2].y,wheelPoints[0][wheelSegments/2].z);
+        glVertex3f(wheelPoints[0][wheelSegments/2].x,wheelPoints[0][wheelSegments/2].y,wheelPoints[0][wheelSegments/2].z);
+
+
+    }
+    glEnd();
+
+    glBegin(GL_QUADS);
+    {
+
+        glVertex3f(wheelPoints[0][wheelSegments/4].x,wheelPoints[0][wheelSegments/4].y,wheelPoints[0][wheelSegments/4].z);
+        glVertex3f(wheelPoints[1][wheelSegments/4].x,wheelPoints[1][wheelSegments/4].y,wheelPoints[0][wheelSegments/4].z);
+        glVertex3f(wheelPoints[1][(wheelSegments/4)*3].x,wheelPoints[1][(wheelSegments/4)*3].y,wheelPoints[0][(wheelSegments/4)*3].z);
+        glVertex3f(wheelPoints[0][(wheelSegments/4)*3].x,wheelPoints[0][(wheelSegments/4)*3].y,wheelPoints[0][(wheelSegments/4)*3].z);
+
+
+    }
+    glEnd();
+
+}
 
 
 void drawWheel(){
+
+
+
+
 
     point rightVector=Utils::crossProduct(wheelForwardVector,globalZaxis);
     rightVector.convertToUnit();
@@ -290,6 +322,9 @@ void drawWheel(){
 
 
 
+    glTranslated(wheelCenter.x,wheelCenter.y,wheelRadius);
+    glRotated(rotate_degree,wheelRightVector.x,wheelRightVector.y,0.0);
+    glTranslated((-1)*wheelCenter.x,(-1)*wheelCenter.y,(-1)*wheelRadius);
     for(int j=0;j<wheelSegments;j++)
     {
         if(wheelMove){
@@ -299,13 +334,17 @@ void drawWheel(){
                 glColor3f(1,0,0);
         }
         else
-        if(j%2==0)
+        if(j%3==0)
             glColor3f(1,0,0);
-        else
+        else if(j%3==1)
             glColor3f(0,1,0);
+        else
+            glColor3f(0,0,1);
+
 
         glBegin(GL_QUADS);
         {
+
             glVertex3f(wheelPoints[0][j].x,wheelPoints[0][j].y,wheelPoints[0][j].z);
             glVertex3f(wheelPoints[1][j].x,wheelPoints[1][j].y,wheelPoints[0][j].z);
             glVertex3f(wheelPoints[1][j+1].x,wheelPoints[1][j+1].y,wheelPoints[0][j+1].z);
@@ -315,6 +354,7 @@ void drawWheel(){
         }
         glEnd();
     }
+    drawWheelAxis();
 
 
 
@@ -330,8 +370,10 @@ void keyboardListener(unsigned char key, int x,int y){
                 wheelPoints[0][i].y+=wheelForwardVector.y*forwardMove;
                 //wheelPoints[0][i].z=wheelRadius*sin(((double)i/(double)wheelSegments)*2*pi)+wheelRadius;
             }
+            rotate_degree-=(forwardMove/wheelRadius)*180;
             wheelCenter.x+=wheelForwardVector.x*forwardMove;
             wheelCenter.y+=wheelForwardVector.y*forwardMove;
+
         }
         else if((char)key=='s'){
             for(int i=0;i<=wheelSegments;i++)
@@ -340,9 +382,11 @@ void keyboardListener(unsigned char key, int x,int y){
                 wheelPoints[0][i].y-=wheelForwardVector.y*forwardMove;
                 //wheelPoints[0][i].z=wheelRadius*sin(((double)i/(double)wheelSegments)*2*pi)+wheelRadius;
             }
+            rotate_degree+=(forwardMove/wheelRadius)*180;
             wheelCenter.x-=wheelForwardVector.x*forwardMove;
             wheelCenter.y-=wheelForwardVector.y*forwardMove;
-            //pace_y=pace_y-.5;
+
+
         }
         else if((char)key=='d'){
 
@@ -376,13 +420,6 @@ void keyboardListener(unsigned char key, int x,int y){
             //wheelRightVector.convertToUnit();
 
 
-            cout<<"theta "<<theta<<endl;
-
-
-           //wh_angle=wh_angle+0.25;
-
-           // co_x=co_x-.5;
-           // pace_y=pace_y-.5;
         }
         else if((char)key=='a'){
            theta=pi/18;
@@ -417,6 +454,8 @@ void keyboardListener(unsigned char key, int x,int y){
         }
 
 }
+
+
 
 
 void specialKeyListener(int key, int x,int y){

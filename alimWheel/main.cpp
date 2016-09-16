@@ -2,8 +2,7 @@
 #include<stdlib.h>
 #include<math.h>
 
-#include <windows.h>
-#include <GL\glut.h>
+#include <GL/glut.h>
 
 #define pi (2*acos(0.0))
 

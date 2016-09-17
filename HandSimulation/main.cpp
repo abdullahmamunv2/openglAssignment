@@ -2,7 +2,6 @@
 #include<stdlib.h>
 #include<math.h>
 
-#include <windows.h>
 #include <GL/glut.h>
 
 #include<vector>
@@ -29,7 +28,15 @@ double yAxisTranslate;
 
 
 
+////// Hand simulation
 
+double yzAngle1=0;
+double yzAngle2=0;
+double xzAngle=0;
+
+double finger1Angle=0;
+double finger2Angle=0;
+double finger3Angle=0;
 
 
 
@@ -343,12 +350,96 @@ void drawWheel(){
 
 void drawHand(void)
 {
+    //******** controller******************************
+
+    double scaletop=5;
+    double radius1=10;
+    double radius2=5;
+    double TriangleLength=15;
+    double fingerRadius=3;
+    double fingerScale=4;
+
+    //************************************************
+
+
+
     glColor3f(1,1,1);
-    glTranslated(0,0,-40);
-    glScaled(1,1,4);
-    glutWireSphere(10,14,10);
-    glTranslated(0,0,-20);
-    glutWireSphere(5,14,10);
+
+
+    glRotated(yzAngle1,1,0,0);
+    glRotated(xzAngle,0,1,0);
+
+
+    glPushMatrix();
+        glTranslated(0,0,(-1)*scaletop*radius1);
+        glScaled(1,1,scaletop);
+        glutWireSphere(radius1,14,10);
+    glPopMatrix();
+
+
+    //////////////////////
+    glTranslated(0,0,(-2)*scaletop*radius1);
+    glRotated(yzAngle2,1,0,0);
+    glTranslated(0,0,(2)*scaletop*radius1);
+
+
+
+    glPushMatrix();
+        glTranslated(0,0,(-2)*scaletop*radius1+(-1)*scaletop*radius2);
+        glScaled(1,1,scaletop);
+        glutWireSphere(radius2,8,10);
+    glPopMatrix();
+
+    glPushMatrix();
+        glTranslated(0,0,(-2)*scaletop*radius1+(-2)*scaletop*radius2-TriangleLength );
+        glBegin(GL_TRIANGLES);
+        {
+            glVertex3f(TriangleLength,0,0);
+            glVertex3f((-1)*TriangleLength,0,0);
+            glVertex3f(0,0,TriangleLength);
+
+
+        }
+        glEnd();
+    glPopMatrix();
+
+
+    glPushMatrix();
+        glTranslated(0,0,(-2)*scaletop*radius1+(-2)*scaletop*radius2-TriangleLength);
+        glRotated((-1)*finger1Angle,1,0,0);
+        glTranslated(0,0,(2)*scaletop*radius1+(2)*scaletop*radius2+TriangleLength);
+
+        glTranslated((-1)*TriangleLength,0,(-2)*scaletop*radius1+(-2)*scaletop*radius2-TriangleLength-fingerScale*fingerRadius);
+        glScaled(1,1,fingerScale);
+        glutWireSphere(fingerRadius,6,8);
+    glPopMatrix();
+
+
+    glPushMatrix();
+        glTranslated(0,0,(-2)*scaletop*radius1+(-2)*scaletop*radius2-TriangleLength);
+        glRotated((-1)*finger2Angle,1,0,0);
+        glTranslated(0,0,(2)*scaletop*radius1+(2)*scaletop*radius2+TriangleLength);
+
+        glTranslated(TriangleLength,0,(-2)*scaletop*radius1+(-2)*scaletop*radius2-TriangleLength-fingerScale*fingerRadius);
+        glScaled(1,1,fingerScale);
+        glutWireSphere(fingerRadius,6,8);
+    glPopMatrix();
+
+
+    glTranslated(0,0,(-2)*scaletop*radius1+(-2)*scaletop*radius2-TriangleLength);
+    glRotated((-1)*finger3Angle,1,0,0);
+    glTranslated(0,0,(2)*scaletop*radius1+(2)*scaletop*radius2+TriangleLength);
+
+    glTranslated(0,0,(-2)*scaletop*radius1+(-2)*scaletop*radius2-TriangleLength-fingerScale*fingerRadius);
+    glScaled(1,1,fingerScale);
+    glutWireSphere(fingerRadius,6,8);
+
+
+
+
+
+    //glTranslated(0,0,(-1)*radius2);
+
 
 
 }
@@ -393,154 +484,76 @@ void drawUnitVector(){
 void keyboardListener(unsigned char key, int x,int y){
 
     if((char)key=='1'){
-        double upDownRotate=pi/18;
-        point lookVector=camera.getLookVector();
-        point rightVector=camera.getRightVector();
+        if(yzAngle1<36){
+            yzAngle1+=3;
+        }
 
-
-        double cosA=cos(upDownRotate);
-        double sinA=sin(upDownRotate);
-
-        lookVector.x*=cosA;
-        lookVector.y*=cosA;
-
-        rightVector.x*=sinA;
-        rightVector.y*=sinA;
-
-        lookVector.x+=rightVector.x;
-        lookVector.y+=rightVector.y;
-
-        camera.setRightVector(Utils::getRightLeftVector(lookVector,camera.getUpVector()));
-        camera.setLookVector(lookVector);
 
     }
     else if((char)key=='2'){
-        double upDownRotate=pi/18;
-        point lookVector=camera.getLookVector();
-        point leftVector=Utils::getRightLeftVector(lookVector,globalZaxis,false);
-
-
-        double cosA=cos(upDownRotate);
-        double sinA=sin(upDownRotate);
-
-        lookVector.x*=cosA;
-        lookVector.y*=cosA;
-
-        leftVector.x*=sinA;
-        leftVector.y*=sinA;
-
-        lookVector.x+=leftVector.x;
-        lookVector.y+=leftVector.y;
-
-        camera.setRightVector(Utils::getRightLeftVector(lookVector,camera.getUpVector()));
-        camera.setLookVector(lookVector);
+        if(yzAngle1>-36){
+            yzAngle1-=3;
+        }
 
     }
     else if((char)key=='3'){
-        double upDownRotate=pi/18;
-        point lookVector=camera.getLookVector();
-        point upVector=camera.getUpVector();
-
-
-        double cosA=cos(upDownRotate);
-        double sinA=sin(upDownRotate);
-
-        lookVector.z*=cosA;
-
-        upVector.z*=sinA;
-
-        lookVector.z+=upVector.z;
-
-        camera.setUpVector(Utils::getPerpendicularVector(lookVector,camera.getRightVector()));
-        camera.setLookVector(lookVector);
+        if(yzAngle2< 85)
+            yzAngle2+=5;
 
     }
     else if((char)key=='4'){
-        double upDownRotate=pi/18;
-        point lookVector=camera.getLookVector();
-        point downVector=Utils::getPerpendicularVector(lookVector,camera.getRightVector(),false);
-
-
-        double cosA=cos(upDownRotate);
-        double sinA=sin(upDownRotate);
-
-        lookVector.z*=cosA;
-
-        downVector.z*=sinA;
-
-        lookVector.z+=downVector.z;
-
-        camera.setUpVector(Utils::getPerpendicularVector(lookVector,camera.getRightVector()));
-        camera.setLookVector(lookVector);
+        if(yzAngle2>0){
+            yzAngle2-=5;
+        }
 
     }
 
     else if((char)key=='5'){
-        double tiltRotate=pi/18;
-        point rightVector=camera.getRightVector();
-        point upVector=camera.getUpVector();
 
-
-        double cosA=cos(tiltRotate);
-        double sinA=sin(tiltRotate);
-
-        upVector.x*=cosA;
-        upVector.z*=cosA;
-
-        rightVector.x*=sinA;
-        rightVector.z*=sinA;
-
-        upVector.x+=rightVector.x;
-        upVector.z+=rightVector.z;
-
-        camera.setRightVector(Utils::getRightLeftVector(camera.getLookVector(),upVector));
-        camera.setUpVector(upVector);
+        if(finger1Angle< 85)
+            finger1Angle+=5;
 
     }
 
     else if((char)key=='6'){
-        double tiltRotate=pi/18;
-        point upVector=camera.getUpVector();
-        point leftVector=Utils::getRightLeftVector(camera.getLookVector(),upVector,false);
+        if(finger1Angle>0){
+            finger1Angle-=5;
+        }
 
+    }
+    else if((char)key=='7'){
 
-        double cosA=cos(tiltRotate);
-        double sinA=sin(tiltRotate);
+        if(finger3Angle< 85)
+            finger3Angle+=5;
 
-        upVector.x*=cosA;
-        upVector.z*=cosA;
+    }
 
-        leftVector.x*=sinA;
-        leftVector.z*=sinA;
+    else if((char)key=='8'){
+        if(finger3Angle>0){
+            finger3Angle-=5;
+        }
 
-        upVector.x+=leftVector.x;
-        upVector.z+=leftVector.z;
+    }
+    else if((char)key=='9'){
 
-        camera.setRightVector(Utils::getRightLeftVector(camera.getLookVector(),upVector));
-        camera.setUpVector(upVector);
+        if(finger2Angle< 85)
+            finger2Angle+=5;
+
+    }
+
+    else if((char)key=='0'){
+        if(finger2Angle>0){
+            finger2Angle-=5;
+        }
 
     }
     else if((char)key=='w'){
-        //pace_y=pace_y+.5;
-        for(int i=0;i<=wheelSegments;i++)
-        {
-            wheelPoints[0][i].x+=wheelForwardVector.x*5;
-            wheelPoints[0][i].y+=wheelForwardVector.y*5;
-            //wheelPoints[0][i].z=wheelRadius*sin(((double)i/(double)wheelSegments)*2*pi)+wheelRadius;
-        }
-        wheelCenter.x+=wheelForwardVector.x*5;
-        wheelCenter.y+=wheelForwardVector.y*5;
+        if(xzAngle > 0)
+            xzAngle-=5;
     }
-    else if((char)key=='s'){
-        for(int i=0;i<=wheelSegments;i++)
-        {
-            wheelPoints[0][i].x-=wheelForwardVector.x*5;
-            wheelPoints[0][i].y-=wheelForwardVector.y*5;
-            //wheelPoints[0][i].z=wheelRadius*sin(((double)i/(double)wheelSegments)*2*pi)+wheelRadius;
-        }
-        wheelCenter.x-=wheelForwardVector.x*5;
-        wheelCenter.y-=wheelForwardVector.y*5;
-        //pace_y=pace_y-.5;
+    else if((char)key=='q'){
+        if(xzAngle < 90)
+            xzAngle+=5;
     }
     else if((char)key=='d'){
 

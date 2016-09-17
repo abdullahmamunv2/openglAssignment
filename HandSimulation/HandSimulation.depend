@@ -225,3 +225,10 @@
 	<stddef.h>
 	<GL/gl.h>
 
+1474078078 source:/home/charlie/Development/opengl/openglAssignment/HandSimulation/main.cpp
+	<iostream>
+	<stdlib.h>
+	<math.h>
+	<GL/glut.h>
+	<vector>
+

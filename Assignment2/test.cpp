@@ -4,6 +4,10 @@
 #include<string>
 #include <cstdlib>
 #include<vector>
+#include<iomanip>
+
+
+#define pi (2*acos(0.0))
 
 
 using namespace std;
@@ -134,6 +138,9 @@ class Utils{
             u.x-=v.x;
             u.y-=v.y;
             u.z-=v.z;
+            u.w-=v.w;
+
+            return u;
         }
 
         static point rotatePoint(point base,double angle,point p){
@@ -217,6 +224,7 @@ class Matrix{
                 }
                 cout<<endl;
             }
+            cout<<endl;
         }
 
         void matrixMultiplyBy(Matrix *M){
@@ -275,6 +283,46 @@ class ScaleMatrix:public Matrix{
 
 };
 
+class UnitVectorRotationMatrix:public Matrix{
+    public:
+        UnitVectorRotationMatrix(point l,point u,point r):Matrix(){
+
+            for(int i=0;i<3;i++){
+                ara[0][i]=r.getVal(pointReflection[i]);
+            }
+
+            for(int i=0;i<3;i++){
+                ara[1][i]=u.getVal(pointReflection[i]);
+            }
+
+            for(int i=0;i<3;i++){
+                ara[2][i]=-l.getVal(pointReflection[i]);
+            }
+        }
+};
+
+
+class ProjectionMatrix:public Matrix{
+    public:
+        ProjectionMatrix(point perspective):Matrix(){
+            double fovX=perspective.x*perspective.y;
+            double t=perspective.z*tan((perspective.x/2)*pi/180);
+            double r=perspective.z*tan((fovX/2)*pi/180);
+
+            double near=perspective.z;
+            double far=perspective.w;
+
+            ara[0][0]=near/r;
+            ara[1][1]=near/t;
+            ara[2][2]=-((far+near)/(far-near));
+            ara[2][3]=-(2*far*near)/(far-near);
+            ara[3][2]=-1;
+            ara[3][3]=0;
+        }
+};
+
+
+
 /***************************************************/
 
 
@@ -309,6 +357,18 @@ class Model{
                 tri[i].arrayToPoint(result,0,3);
             }
         }
+
+        virtual void fileWrite(ofstream & fw){
+            for(int i=0;i<_size;i++){
+                for(int j=0;j<3;j++){
+                   fw<<std::fixed << std::setprecision(3)<<tri[i].getVal(pointReflection[j])<<" ";
+                }
+
+                fw<<"\n";
+
+            }
+        }
+
         virtual void print(){
             cout<<"This is Model"<<endl;
         }
@@ -377,8 +437,9 @@ class Camera{
 
             u=Utils::crossProduct(r,l);
 
-
-
+            l.print();
+            r.print();
+            u.print();
         }
 
 
@@ -416,6 +477,18 @@ class Camera{
             return this->r;
         }
 
+        void setupIntialPosition(){
+            cameraPosition.x,cameraPosition.y,cameraPosition.z=0;
+            l.z=-1;
+            l.x,l.y=0;
+
+            r.x=1;
+            r.y,r.z=0;
+
+            u.y=1;
+            u.x,u.z=0;
+        }
+
 };
 
 /**************** Global variable *********************/
@@ -438,7 +511,7 @@ Camera *camera;
 
 
 
-void Task1(ifstream &file){
+void init(ifstream &file){
     if(file.is_open()){
         point eye,look,up;
         string line;
@@ -487,7 +560,6 @@ void Task1(ifstream &file){
                 }
                 Matrix *translate=new TranslateMatrix(val);
                 translate->setPushId(push);
-                translate->print_Mat();
                 translate->matrixMultiplyBy(matrixs[matrixs.size()-1]);
                 matrixs.push_back(translate);
 
@@ -499,7 +571,6 @@ void Task1(ifstream &file){
                 }
                 Matrix *scale=new ScaleMatrix(val);
                 scale->setPushId(push);
-                scale->print_Mat();
                 scale->matrixMultiplyBy(matrixs[matrixs.size()-1]);
                 matrixs.push_back(scale);
             }
@@ -508,6 +579,9 @@ void Task1(ifstream &file){
             }
             else if(line=="push"){
                 push++;
+            }
+            else if(line[0]=='#'){
+                continue;
             }
             else if(line=="pop"){
                 if(push==0)
@@ -526,19 +600,80 @@ void Task1(ifstream &file){
                 break;
             }
         }
+
+        file.close();
     }
     else{
         cout<<"file is closed !!!!!!!!!!!!!"<<endl;
     }
 }
 
+void Task1(){
+    ofstream stage1 ("stage1.txt");
+    for(int i=0;i<models.size();i++){
+        models[i]->fileWrite(stage1);
+        stage1<<"\n";
+    }
+    stage1<<"\n";
+
+    stage1.close();
+
+
+
+}
+
 void Task2(){
-    point p=camera->cameraPosition();
+    point p=camera->getCameraPosition();
     p.x*=-1;
     p.y*=-1;
-    p.z*=1;
+    p.z*=-1;
     Matrix * translateToOrigin = new TranslateMatrix(p);
 
+    Matrix * unitVectorRotation= new UnitVectorRotationMatrix(camera->getLookVector(),camera->getUpVector(),camera->getRightVector());
+
+    translateToOrigin->matrixMultiplyBy(unitVectorRotation);
+
+    Matrix *viewTransformationMatrix=translateToOrigin;
+
+    /****** update camera property ********/
+    camera->setupIntialPosition();
+    /*************************************/
+
+    for(int i=0;i<models.size();i++){
+        models[i]->Transform(viewTransformationMatrix);
+    }
+
+    ofstream stage2 ("stage2.txt");
+    for(int i=0;i<models.size();i++){
+        models[i]->fileWrite(stage2);
+        stage2<<"\n";
+    }
+    stage2<<"\n";
+
+    stage2.close();
+
+
+
+}
+
+void Task3(){
+    Matrix * projectionMatrix=new ProjectionMatrix(Perspective);
+
+    projectionMatrix->print_Mat();
+
+    for(int i=0;i<models.size();i++){
+        models[i]->Transform(projectionMatrix);
+    }
+
+
+    ofstream stage3 ("stage3.txt");
+    for(int i=0;i<models.size();i++){
+        models[i]->fileWrite(stage3);
+        stage3<<"\n";
+    }
+    stage3<<"\n";
+
+    stage3.close();
 
 }
 
@@ -552,27 +687,9 @@ int main(){
     pointReflection[3]="w";
     matrixs.push_back(new IdentityMatrix());
 
-
-    Task1(myfile);
+    init(myfile);
+    Task1();
     Task2();
-    for(int i=0;i<models.size();i++){
-        cout<<"model : "<<i+1<<endl;
-        models[i]->print();
-    }
+    Task3();
 
-
-    /*double ** mat1=new double[2];
-    double ** mat2=new double[2];
-    for(int i=0;i<2;i++){
-        mat1[2]=new double[2]
-    }*/
-
-    //test
-//    point d;
-//    d.x=4;
-//    d.y=5;
-//    d.z=4;
-//    Matrix *mat=new TranslateMatrix(d);
-//    mat->print_Mat();
-    //
 }

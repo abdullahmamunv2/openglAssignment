@@ -64,7 +64,7 @@ class point
             return val;
         }
         void convertToUnit(){
-            double vectorValue=floor((sqrt(x*x+y*y+z*z)*100))/100;
+            double vectorValue=(sqrt(x*x+y*y+z*z));
             x/=vectorValue;
             y/=vectorValue;
             z/=vectorValue;
@@ -127,9 +127,9 @@ class Utils{
         }
         static point crossProduct(point u,point v){
             point p;
-            p.x=floor((u.y*v.z-v.y*u.z)*100)/100;
-            p.y=floor((v.x*u.z-u.x*v.z)*100)/100;
-            p.z=floor((u.x*v.y-v.x*u.y)*100)/100;
+            p.x=(u.y*v.z-v.y*u.z);
+            p.y=(v.x*u.z-u.x*v.z);
+            p.z=(u.x*v.y-v.x*u.y);
 
             return p;
         }
@@ -354,14 +354,19 @@ class Model{
                     result[j]=val;
 
                 }
+                for(int k=0;k<3;k++){
+                    if(result[3]!=0)
+                        result[k]/=result[3];
+                }
                 tri[i].arrayToPoint(result,0,3);
+
             }
         }
 
         virtual void fileWrite(ofstream & fw){
             for(int i=0;i<_size;i++){
                 for(int j=0;j<3;j++){
-                   fw<<std::fixed << std::setprecision(3)<<tri[i].getVal(pointReflection[j])<<" ";
+                   fw<<std::fixed << std::setprecision(4)<<tri[i].getVal(pointReflection[j])<<" ";
                 }
 
                 fw<<"\n";
@@ -663,6 +668,7 @@ void Task3(){
 
     for(int i=0;i<models.size();i++){
         models[i]->Transform(projectionMatrix);
+
     }
 
 
